@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+//
+// Copyright (C) 2024, Tzvetomir Stoyanov <tz.stoyanov@gmail.com>
+//
+
+
 let CONFIG = {
   scanInterval: 10, // seconds: run a timer on every 10 seconds, that will fetch the voltage
   voltmeterID: 100, // Shelly ID of the voltmeter: - when the add on is installed, the Shelly device will define and report this number
