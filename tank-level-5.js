@@ -6,6 +6,7 @@ let CFG = {
   uptime_ms: 0,
   scan_run: 0,
   runInProgress: false,
+  errCountThreshold: 2,
  // WebHook notifications
  notify: { delaySec: 120, // seconds: minimal interval between notifications
            filter: 5, // Max number of notification within notifyDelaySec interval
@@ -283,11 +284,21 @@ function callShellyRemote(id) {
        TANK.shellyRemote[id].switches[1].state = val.sw1;
        TANK.shellyRemote[id].currentLevel = val.level;
        TANK.shellyRemote[id].fillRequest = val.fillRequest;
+       if (TANK.shellyRemote[id].err_count >= CFG.errCountThreshold ) {
+         sentNotify("Connnection to " + TANK.shellyRemote[id].name + " restored.");
+       }
        TANK.shellyRemote[id].err_count = 0;
-     } catch (e) { TANK.shellyRemote[id].err_count++; }
+     } catch (e) { 
+      TANK.shellyRemote[id].err_count++;
+      if (TANK.shellyRemote[id].err_count == CFG.errCountThreshold ) {
+       sentNotify("Broken connnection to " + TANK.shellyRemote[id].name + ": invalid reply.");
+      }
+     }
     } else { 
-      TANK.shellyRemote[id].err_count++; 
-      sentNotify(i, TANK.shellyRemote[id].name + ": " + err_message);
+      TANK.shellyRemote[id].err_count++;
+      if (TANK.shellyRemote[id].err_count == CFG.errCountThreshold ) {
+       sentNotify("Lost connnection to " + TANK.shellyRemote[id].name + ": " + err_message + ".");
+      }
     }
 	TANK.fetchRemInProgerss= false;
   });
