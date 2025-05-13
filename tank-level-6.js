@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+//
+// Copyright (C) 2024, Tzvetomir Stoyanov <tz.stoyanov@gmail.com>
+//
+
 let CONFIG = {
   scanInterval_ms: 100,   // miliseconds: read the sensors on every 100 ms
   calcInterval: 10,      // times * scanInterval_ms: check the tanks state
