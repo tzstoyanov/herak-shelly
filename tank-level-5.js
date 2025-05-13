@@ -11,7 +11,7 @@ let CFG = {
   uptime_ms: 0,
   scan_run: 0,
   runInProgress: false,
-  errCountThreshold: 2,
+  errCountThreshold: 20,
  // WebHook notifications
  notify: { delaySec: 120, // seconds: minimal interval between notifications
            filter: 5, // Max number of notification within notifyDelaySec interval
