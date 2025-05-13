@@ -48,7 +48,7 @@ let TANK = {
   shellyRemote: [
 	{ id: 0, name: "Tank 6000L", url: 'http://192.168.10.227/script/2/fetchData', 
       valvesFillState: true, fillRequest: false, currentLevel: 0.0,
-      fillInProgress: false, err_count: 0,
+      fillInProgress: false, err_count: 0,  err_ms: 0,
       notify: { lastSent_ms: 0, queuePushIdx: 0, send: 0,
                 queuePopIdx: 0, queue: new Array(CFG.notify.queueCount)},      
       switches: [ {id: 0, state: false, control: true, desiredState: false}, 
@@ -290,16 +290,24 @@ function callShellyRemote(id) {
        TANK.shellyRemote[id].currentLevel = val.level;
        TANK.shellyRemote[id].fillRequest = val.fillRequest;
        if (TANK.shellyRemote[id].err_count >= CFG.errCountThreshold ) {
-         sentNotify("Connnection to " + TANK.shellyRemote[id].name + " restored.");
+         let err_s = (CFG.uptime_ms - TANK.shellyRemote[id].err_ms) / 1000;
+         sentNotify("Connection to " + TANK.shellyRemote[id].name + " restored in " + err_s + "seconds");
        }
        TANK.shellyRemote[id].err_count = 0;
+       TANK.shellyRemote[id].err_ms = 0;
      } catch (e) { 
+      if (TANK.shellyRemote[id].err_count == 0 ) {
+        TANK.shellyRemote[id].err_ms = CFG.uptime_ms;
+      }
       TANK.shellyRemote[id].err_count++;
       if (TANK.shellyRemote[id].err_count == CFG.errCountThreshold ) {
        sentNotify("Broken connection to " + TANK.shellyRemote[id].name + ": invalid reply.");
       }
      }
-    } else { 
+    } else {
+      if (TANK.shellyRemote[id].err_count == 0 ) {
+        TANK.shellyRemote[id].err_ms = CFG.uptime_ms;
+      }
       TANK.shellyRemote[id].err_count++;
       if (TANK.shellyRemote[id].err_count == CFG.errCountThreshold ) {
        sentNotify("Lost connection to " + TANK.shellyRemote[id].name + ": " + err_message + ".");
