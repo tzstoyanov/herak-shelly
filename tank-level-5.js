@@ -104,9 +104,9 @@ function setSwitchState(sw_id, state) {
 function setPumpState(state) {
   if (state != TANK.switches[0].desiredState) {
     if (state) {
-      sentNotify("The pump is started.");
+      sentNotify("The pump has been started.");
     } else {
-      sentNotify("The pump is stopped.");
+      sentNotify("The pump has been stopped.");
     }
   }
   return setSwitchState(0, state);
@@ -116,9 +116,9 @@ function setValvesState(state) {
   if (!TANK.valves.control) { return true; }
   if (state != TANK.shellyRemote[TANK.valves.shelly_id].switches[TANK.valves.sw_id].desiredState) {
     if (state) {
-      sentNotify("The valves are turned on.");
+      sentNotify("The valves has been turned on.");
     } else {
-      sentNotify("The valves are turned off.");
+      sentNotify("The valves has been turned off.");
     }
   }
   TANK.shellyRemote[TANK.valves.shelly_id].switches[TANK.valves.sw_id].desiredState = state;
@@ -173,10 +173,10 @@ function checkEmptyState() {
     if (TANK.level.current <= TANK.pumpThreshold.low) {
       if (!setValvesState(TANK.valvesFillState)) { return true; }
 	  let levelPcnt = (TANK.level.current - TANK.level.min)/TANK.level.pcnt;
-   	  sentNotify(TANK.name + " is empty (" + levelPcnt.toFixed(2) + "%).");
+	  sentNotify(TANK.name + " is empty (" + levelPcnt.toFixed(2) + "%).");
 	  setPumpState(true);
 	  TANK.fillInProgress = true; 
-   	  sentNotify(TANK.name + " is being filled.");
+	  sentNotify("Filling " + TANK.name + " now.");
   	  return true;
     }	
   }
@@ -186,7 +186,7 @@ function checkEmptyState() {
        if (!setValvesState(TANK.shellyRemote[i].valvesFillState)) { return true;  }
        setPumpState(true);
        TANK.shellyRemote[i].fillInProgress = true;
-       sentNotify(TANK.shellyRemote[i].name + " is being filled.");
+       sentNotify("Filling " + TANK.shellyRemote[i].name + " now.");
        return true;
 	  }
  }
@@ -296,13 +296,13 @@ function callShellyRemote(id) {
      } catch (e) { 
       TANK.shellyRemote[id].err_count++;
       if (TANK.shellyRemote[id].err_count == CFG.errCountThreshold ) {
-       sentNotify("Broken connnection to " + TANK.shellyRemote[id].name + ": invalid reply.");
+       sentNotify("Broken connection to " + TANK.shellyRemote[id].name + ": invalid reply.");
       }
      }
     } else { 
       TANK.shellyRemote[id].err_count++;
       if (TANK.shellyRemote[id].err_count == CFG.errCountThreshold ) {
-       sentNotify("Lost connnection to " + TANK.shellyRemote[id].name + ": " + err_message + ".");
+       sentNotify("Lost connection to " + TANK.shellyRemote[id].name + ": " + err_message + ".");
       }
     }
 	TANK.fetchRemInProgerss= false;
