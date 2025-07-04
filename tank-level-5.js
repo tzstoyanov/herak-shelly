@@ -29,6 +29,7 @@ let TANK = {
 	controlTankHydro: true,
 	priority: 1,
 	fillInProgress: false,
+	fillRequestUser: false,
 	fill_ms: 0,
 	fetchSwInProgerss: false,
 	fetchSwIdx: 0,
@@ -48,8 +49,8 @@ let TANK = {
 	fetchRemIdx: 0,  
 	shellyRemote: [
 	{ id: 0, name: "Tank 6000L", url: 'http://192.168.10.227/script/2/fetchData', 
-			valvesFillState: true, fillRequest: false, currentLevel: 0.0,
-			fillInProgress: false, err_count: 0,  err_ms: 0, fill_ms: 0,
+			valvesFillState: true, fillRequest: false, fillRequestUser: false,
+			currentLevel: 0.0, fillInProgress: false, err_count: 0,  err_ms: 0, fill_ms: 0,
 			notify: { lastSent_ms: 0, queuePushIdx: 0, send: 0,
 								queuePopIdx: 0, queue: new Array(CFG.notify.queueCount)},      
 			switches: [ {id: 0, state: false, control: true, desiredState: false}, 
@@ -176,25 +177,32 @@ function checkFillState() {
 
 function checkEmptyState() {
 	if (TANK.controlTankFill) {
-		if (TANK.fillInProgress) { return true; }
-		if (TANK.level.current <= TANK.pumpThreshold.low) {
+		if (TANK.fillInProgress) {
+			TANK.fillRequestUser = false;
+			return true;
+		}
+		if (TANK.level.current <= TANK.pumpThreshold.low || TANK.fillRequestUser) {
 			if (!setValvesState(TANK.valvesFillState)) { return true; }
 			let levelPcnt = (TANK.level.current - TANK.level.min)/TANK.level.pcnt;
-			sentNotify(TANK.name + " is empty (" + levelPcnt.toFixed(2) + "%).");
 			setPumpState(true);
 			TANK.fillInProgress = true;
+			TANK.fillRequestUser = false;
 			TANK.fill_ms = CFG.uptime_ms;
-			sentNotify("Filling " + TANK.name + " now.");
+			sentNotify("Filling " + TANK.name + " now ... (" + levelPcnt.toFixed(2) + "%).");
 			return true;
 		}	
 	}
 	for (let i = 0; i < TANK.shellyRemote.length; i++) { 
-		if (TANK.shellyRemote[i].fillInProgress) { return true; }
-		if (TANK.shellyRemote[i].fillRequest) {
+		if (TANK.shellyRemote[i].fillInProgress) {
+			TANK.shellyRemote[i].fillRequestUser = false
+			return true;
+		}
+		if (TANK.shellyRemote[i].fillRequest || TANK.shellyRemote[i].fillRequestUser) {
 			 if (!setValvesState(TANK.shellyRemote[i].valvesFillState)) { return true;  }
 			 setPumpState(true);
 			 TANK.shellyRemote[i].fillInProgress = true;
 			 TANK.shellyRemote[i].fill_ms = CFG.uptime_ms;
+			 TANK.shellyRemote[i].fillRequestUser = false;
 			 sentNotify("Filling " + TANK.shellyRemote[i].name + " now.");
 			 return true;
 		}
@@ -355,8 +363,31 @@ function tankRun() {
 	CFG.runInProgress = false;
 }
 
+// http://<dev ip>/script/1/user_command?fill=<5/6>
+function onUserCommand(request, response)
+{
+	code = 400;
+	body = 'Bad Request'
+	let cmd = request.query.split("=");
+	if (cmd[0] === 'fill') {
+    if (cmd[1] == 5) {
+			TANK.fillRequestUser = true;
+			body = "0";
+			code = 200;
+		} else if (cmd[1] == 6 ) {
+			TANK.shellyRemote[0].fillRequestUser = true;
+			body = "0";
+			code = 200;
+		}
+	}
+	response.code = code;
+	response.body = body;
+	response.send();
+}
+
 //init the script
 function init() {
+	HTTPServer.registerEndpoint("user_command", onUserCommand);
 	TANK.level.pcnt = (TANK.level.max - TANK.level.min)/100;
 	//start the timer
 	Timer.set(CFG.scanInterval_ms, true, tankRun);
