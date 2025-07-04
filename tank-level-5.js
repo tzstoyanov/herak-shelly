@@ -17,7 +17,7 @@ let CFG = {
            filter: 5, // Max number of notification within notifyDelaySec interval
            queueCount: 15, // Max unsend notifications
            inProgress: false,
-           url: 'https://home.zico.biz/api/webhook/',  // URL for the webhook notifications
+           url: 'http://192.168.10.137:8123/api/webhook/',  // URL for the webhook notifications
            whId: '-0vJZOQ7D9NCj3Iz3p63uSMAI',  // ID of the webhook notification
         },
 };
