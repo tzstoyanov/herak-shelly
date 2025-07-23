@@ -12,14 +12,14 @@ let CFG = {
 	scan_run: 0,
 	runInProgress: false,
 	errCountThreshold: 20,
- // WebHook notifications
- notify: { delaySec: 120, // seconds: minimal interval between notifications
+ 	// WebHook notifications
+ 	notify: { delaySec: 120, // seconds: minimal interval between notifications
 					 filter: 5, // Max number of notification within notifyDelaySec interval
 					 queueCount: 15, // Max unsend notifications
 					 inProgress: false,
 					 url: 'http://192.168.10.137:8123/api/webhook/',  // URL for the webhook notifications
 					 whId: '-0vJZOQ7D9NCj3Iz3p63uSMAI',  // ID of the webhook notification
-				},
+	},
 };
 
 // Local Shelly, controling tank 5000L
@@ -55,7 +55,7 @@ let TANK = {
 								queuePopIdx: 0, queue: new Array(CFG.notify.queueCount)},      
 			switches: [ {id: 0, state: false, control: true, desiredState: false}, 
 	 								{id: 1, state: false, control: false, desiredState: false} ],
-		}],
+	}],
 };
 
 function sentNotify(str) {
@@ -92,7 +92,7 @@ function sentNotifyTask() {
 		 function (result, err_code, err_message) {
 									if (err_code === 0) { TANK.notify.lastSent_ms = CFG.uptime_ms; }
 									CFG.notify.inProgress = false;
-		 });
+	 });
 }
 
 function setSwitchState(sw_id, state) {
@@ -370,7 +370,7 @@ function onUserCommand(request, response)
 	body = 'Bad Request'
 	let cmd = request.query.split("=");
 	if (cmd[0] === 'fill') {
-    if (cmd[1] == 5) {
+		if (cmd[1] == 5) {
 			TANK.fillRequestUser = true;
 			body = "0";
 			code = 200;
