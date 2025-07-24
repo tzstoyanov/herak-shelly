@@ -30,6 +30,7 @@ let TANK = {
 	priority: 1,
 	fillInProgress: false,
 	fillRequestUser: false,
+	powerSaveMode: false,
 	fill_ms: 0,
 	fetchSwInProgerss: false,
 	fetchSwIdx: 0,
@@ -348,16 +349,29 @@ function readStates() {
 		 }
 	 }
 }
+
+function checkPowerMode() {
+	if (!TANK.powerSaveMode) {
+		return false;
+	}
+	setPumpState(false);
+	setValvesState(false);
+	setSwitchState(1, !TANK.hydroOnState);
+	return true;
+}
+
 function tankRun() {
 	CFG.uptime_ms += CFG.scanInterval_ms;
 	if (CFG.runInProgress) { return; }
 	CFG.runInProgress = true;
 	CFG.scan_run++;
-	readSensors();
-	readStates();
-	if (CFG.scan_run >= CFG.calcInterval) {
-		CFG.scan_run = 0;
-		checkState();
+	if (!checkPowerMode()) {
+		readSensors();
+		readStates();
+		if (CFG.scan_run >= CFG.calcInterval) {
+			CFG.scan_run = 0;
+			checkState();
+		}
 	}
 	sentNotifyTask();
 	CFG.runInProgress = false;
@@ -376,6 +390,22 @@ function onUserCommand(request, response)
 			code = 200;
 		} else if (cmd[1] == 6 ) {
 			TANK.shellyRemote[0].fillRequestUser = true;
+			body = "0";
+			code = 200;
+		}
+	} else if (cmd[0] === 'power_save') {
+		if (cmd[1] == 'on') {
+			if (!TANK.powerSaveMode) {
+				sentNotify("PowerSave mode ON");
+			}
+			TANK.powerSaveMode = true;
+			body = "0";
+			code = 200;
+		} else if (cmd[1] == 'off' ) {
+			if (TANK.powerSaveMode) {
+				sentNotify("PowerSave mode OFF");
+			}
+			TANK.powerSaveMode = false;
 			body = "0";
 			code = 200;
 		}
