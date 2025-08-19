@@ -198,7 +198,7 @@ function readSwState(sw_id) {
 					TANK.switches[sw_id].state = result.output;
 				}
 			} else {
-				if (err_message) { console.log(TANK.switches[sw_id].name + ": " + err_message; }
+				if (err_message) { console.log(TANK.switches[sw_id].name + ": " + err_message) }
 			}
 			TANK.fetchSwInProgerss = false;
 	 });
