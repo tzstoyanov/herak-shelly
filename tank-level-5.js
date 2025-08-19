@@ -309,7 +309,7 @@ function callShellyRemote(id) {
 			 TANK.shellyRemote[id].fillRequest = val.fillRequest;
 			 if (TANK.shellyRemote[id].err_count >= CFG.errCountThreshold ) {
 				 let err_s = (CFG.uptime_ms - TANK.shellyRemote[id].err_ms) / 1000;
-				 sentNotify("Connection to " + TANK.shellyRemote[id].name + " restored in " + err_s + "seconds");
+				 sentNotify("Connection to " + TANK.shellyRemote[id].name + " restored in " + err_s + " seconds");
 			 }
 			 TANK.shellyRemote[id].err_count = 0;
 			 TANK.shellyRemote[id].err_ms = 0;
