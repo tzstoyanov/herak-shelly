@@ -43,8 +43,8 @@ let TANK = {
 	hydroOnState: false, // State of the hydro swtich to run the hydrophore
 	voltmeter: {id: 100, samples: new Array(CFG.samplesCount), idx: -1, fetchInProgerss: false},
 	level: {max: 5.63, min: 2.0, current: 0, pcnt: 0},
-	pumpThreshold: {low: 4.0, high: 5.2}, // Water level threshold for stopping and satrting the pump
-	hydroThreshold: {low: 2.5, high: 3.0}, // Water level threshold for stopping and satrting the hydrophore
+	pumpThreshold: {low: 4.0, high: 5.2}, // Water level threshold for stopping and starting the pump
+	hydroThreshold: {low: 2.5, high: 3.0}, // Water level threshold for stopping and starting the hydrophore
 	valves: {shelly_id: 0, sw_id: 0, name: "valves", control: true},
 	fetchRemInProgerss: false,
 	fetchRemIdx: 0,  
