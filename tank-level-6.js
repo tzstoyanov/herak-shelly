@@ -33,8 +33,8 @@ let TANK = {
 	hydroOnState: true, // State of the hydro swtich to run the hydrophore
 	voltmeter: {id: 100, samples: new Array(CONFIG.samplesCount), idx: -1,  fetchInProgerss: false},
 	level: {max: 6.0, min: 2.0, current: 0, pcnt: 0},
-	pumpThreshold: {low: 4.0, high: 5.0}, // Water level threshold for stopping and satrting the pump
-	hydroThreshold: {low: 2.2, high: 2.5}, // Water level threshold for stopping and satrting the hydrophore
+	pumpThreshold: {low: 4.0, high: 5.0}, // Water level threshold for stopping and starting the pump
+	hydroThreshold: {low: 2.2, high: 2.5}, // Water level threshold for stopping and starting the hydrophore
 	notify: { lastSent_ms: 0, queuePushIdx: 0, send: 0,
 			queuePopIdx: 0, queue: new Array(CONFIG.notify.queueCount)},  
 };
@@ -198,7 +198,7 @@ function readSwState(sw_id) {
 					TANK.switches[sw_id].state = result.output;
 				}
 			} else {
-				if (err_message) { console.log(TANK.switches[sw_id].name + ": " + err_message; }
+				if (err_message) { console.log(TANK.switches[sw_id].name + ": " + err_message) }
 			}
 			TANK.fetchSwInProgerss = false;
 	 });
