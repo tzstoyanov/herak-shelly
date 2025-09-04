@@ -15,7 +15,7 @@ function tempTracker() {
       function (result, err_code, err_message) {
         console.log(
           "Current switch status:",
-          result.output,
+          onOffState(result.output),
           err_code,
           err_message
         );
@@ -44,6 +44,11 @@ function setSwitch(temp, currentState) {
   if (currentState !== desireState) {
     Shelly.call("Switch.Set", { id: CONFIG.switch.id, on: desireState });
   }
+  let on;
+  console.log("Heater is ", onOffState(desireState));
+}
+function onOffState(state) {
+  return state ? "On" : "Off";
 }
 
 function onUserCommand(request, response) {}
