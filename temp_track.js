@@ -12,16 +12,20 @@ function tempTracker() {
     Shelly.call(
       "Switch.GetStatus",
       { id: CONFIG.switch.id },
-      function (result, err_code, err_message) {
-        console.log(
-          "Current switch status:",
-          onOffState(result.output),
-          err_code,
-          err_message
-        );
-        const currentState = result.output;
-        let temp = readTempSensor();
-        setSwitch(temp, currentState);
+      function (result, err_code, err_message) { 
+        if (result !== undefined && err_code === 0) {
+          console.log(
+            "Current heater status is",
+            onOffState(result.output),
+            err_code,
+            err_message
+          );
+          const currentState = result.output;
+          let temp = readTempSensor();
+          setSwitch(temp, currentState);
+        } else {
+          throw err_message;
+        }
       }
     );
   } catch (e) {
@@ -35,16 +39,10 @@ function readTempSensor() {
 
 function setSwitch(temp, currentState) {
   print(temp);
-  let desireState;
-  if (temp < CONFIG.tempThreshold) {
-    desireState = true;
-  } else {
-    desireState = false;
-  }
+  let desireState = temp < CONFIG.tempThreshold;
   if (currentState !== desireState) {
     Shelly.call("Switch.Set", { id: CONFIG.switch.id, on: desireState });
   }
-  let on;
   console.log("Heater is ", onOffState(desireState));
 }
 function onOffState(state) {
