@@ -3,7 +3,7 @@
 //  shelly model Shelly 2PM Gen3s
 
 let CONFIG = {
-  debug: true,
+  debug: false,
   scanInterval_ms: 5000, // miliseconds: read the sensors on every 5000 ms
   tempThreshold: 3, // °C
   switch: { id: 0, name: "heater" },
