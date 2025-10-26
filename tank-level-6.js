@@ -25,13 +25,12 @@ let CONFIG = {
 let TANK = {
   name: "Tank 6000L",
   controlTankFill: true,
-  controlTankHydro: false,
   fillRequest: false,
   fetchSwInProgerss: false,
   fetchSwIdx: 0,
   switches: [
-    { id: 0, name: "valves", state: false, desiredState: false },
-    { id: 1, name: "hydro 6000L", state: false, desiredState: false },
+    { id: 0, name: "valves", state: false, desiredState: false, control: true },
+    { id: 1, name: "hydro 6000L", state: false, desiredState: false, control: false },
   ],
   hydroOnState: true, // State of the hydro swtich to run the hydrophore
   voltmeter: {
@@ -105,6 +104,9 @@ function sentNotifyTask() {
 }
 
 function setSwitchState(sw_id, state) {
+  if (!TANK.switches[sw_id].control) {
+    return;
+  }
   Shelly.call("Switch.Set", { id: TANK.switches[sw_id].id, on: state });
   TANK.switches[sw_id].desiredState = state;
   console.log(TANK.switches[sw_id].name, " -> ", state);
@@ -115,6 +117,9 @@ function checkSwitchState() {
   let mismatch = false;
 
   for (let i = 0; i < TANK.switches.length; i++) {
+    if (!TANK.switches[i].control) {
+      continue;
+    }
     if (TANK.switches[i].state != TANK.switches[i].desiredState) {
       console.log(
         TANK.switches[i].name + " mismatch: " + TANK.switches[i].desiredState
@@ -149,7 +154,7 @@ function checkFillState() {
 }
 
 function checkHydroState() {
-  if (TANK.controlTankHydro !== true) {
+  if (TANK.switches[1].control !== true) {
     return;
   }
   if (TANK.level.current >= TANK.hydroThreshold.high) {
@@ -280,7 +285,7 @@ function fetchDataEndpoint(req, res) {
   params = getQueryParams(req.query);
   if (params.sw0) {
     let state = params["sw0"] === "true";
-    if (TANK.switches[0].state != state) {
+    if (TANK.switches[0].control && TANK.switches[0].state != state) {
       console.log("Requested ", TANK.switches[0].name, ": ", state);
       setSwitchState(0, state);
       read = true;
@@ -288,7 +293,7 @@ function fetchDataEndpoint(req, res) {
   }
   if (params.sw1) {
     let state = params["sw1"] === "true";
-    if (TANK.switches[1].state != state) {
+    if (TANK.switches[1].control && TANK.switches[1].state != state) {
       console.log("Requested ", TANK.switches[0].name, ": ", state);
       setSwitchState(1, state);
       read = true;

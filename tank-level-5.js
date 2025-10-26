@@ -27,7 +27,6 @@ let CFG = {
 let TANK = {
   name: "Tank 5000L",
   controlTankFill: true,
-  controlTankHydro: true,
   priority: 1,
   fillInProgress: false,
   fillRequestUser: false,
@@ -44,13 +43,7 @@ let TANK = {
   },
   switches: [
     { id: 0, name: "pump", state: false, desiredState: false, control: true },
-    {
-      id: 1,
-      name: "hydro 5000L",
-      state: false,
-      desiredState: false,
-      control: false,
-    },
+    { id: 1, name: "hydro 5000L", state: false, desiredState: false, control: false },
   ],
   valvesFillState: false, // State of the valves to fill this tank
   hydroOnState: false, // State of the hydro swtich to run the hydrophore
@@ -317,7 +310,7 @@ function checkEmptyState() {
 }
 
 function checkHydroState() {
-  if (TANK.controlTankHydro !== true) {
+  if (TANK.switches[1].control !== true) {
     return;
   }
   if (TANK.level.current >= TANK.hydroThreshold.high) {
