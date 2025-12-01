@@ -5,56 +5,72 @@
 let CONFIG = {
   debug: false,
   scanInterval_ms: 5000, // miliseconds: read the sensors on every 5000 ms
-  tempThreshold: 3, // °C
-  switch: { id: 0, name: "heater" },
+  fetchSwInProgerss: false,
+  temperature: {id: 101, current: 6, min: 4, max: 6}, // °C
+  switch: { id: 0, name: "heater", state: false, desiredState: false },
 };
+
+function readTempSensor() {
+  CONFIG.temperature.current = Shelly.getComponentStatus("Temperature", CONFIG.temperature.id).tC;
+  if (CONFIG.debug) {
+    console.log("Current temperature is ", CONFIG.temperature.current);
+  }
+}
+
+function readSwState() {
+  if (CONFIG.fetchSwInProgerss) {
+    return false;
+  }
+  CONFIG.fetchSwInProgerss = true;
+  Shelly.call(
+    "Switch.GetStatus",
+    { id: CONFIG.switch.id },
+    function (result, err_code, err_message) {
+      if (err_code === 0 && result != undefined) {
+        if (result.id === CONFIG.switch.id) {
+          CONFIG.switch.state = result.output;
+        }
+      }
+      CONFIG.fetchSwInProgerss = false;
+    }
+  );
+  return true;
+}
+
+function checkState() {
+  if (CONFIG.temperature.current <= CONFIG.temperature.min) {
+    CONFIG.switch.desiredState = true
+    if (CONFIG.debug) {
+      console.log("Going to start the heater");
+    }
+  }
+  if (CONFIG.temperature.current >= CONFIG.temperature.max) {
+    CONFIG.switch.desiredState = false
+    if (CONFIG.debug) {
+      console.log("Going to stop the heater");
+    }
+  }
+}
+
+function setSwitch() {
+  if (CONFIG.switch.state != CONFIG.switch.desiredState) {
+    Shelly.call("Switch.Set", { id: CONFIG.switch.id, on: CONFIG.switch.desiredState });
+    if (CONFIG.debug) {
+      console.log("Set heater to ", CONFIG.switch.desiredState ? "On" : "Off");
+    }
+  }
+}
 
 function tempTracker() {
   try {
-    Shelly.call(
-      "Switch.GetStatus",
-      { id: CONFIG.switch.id },
-      function (result, err_code, err_message) {
-        if (result !== undefined && err_code === 0) {
-          if (CONFIG.debug) {
-            console.log(
-              "Current heater status is",
-              onOffState(result.output),
-              err_code,
-              err_message
-            );
-          }
-          const currentState = result.output;
-          let temp = readTempSensor();
-          setSwitch(temp, currentState);
-        } else {
-          throw err_message;
-        }
-      }
-    );
+    readTempSensor();
+    readSwState();
+    checkState();
+    setSwitch();
   } catch (e) {
     print(e);
   }
 }
-function readTempSensor() {
-  let temp = Shelly.getComponentStatus("Temperature", 100).tC; //Temp ID, mostly 100 to 102
-  return temp;
-}
-
-function setSwitch(temp, currentState) {
-  let desireState = temp < CONFIG.tempThreshold;
-  if (currentState !== desireState) {
-    Shelly.call("Switch.Set", { id: CONFIG.switch.id, on: desireState });
-  }
-  if (CONFIG.debug) {
-    console.log("Heater is ", onOffState(desireState));
-  }
-}
-
-function onOffState(state) {
-  return state ? "On" : "Off";
-}
-
 //init the script
 function init() {
   //start the timer
