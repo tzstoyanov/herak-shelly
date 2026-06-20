@@ -217,49 +217,47 @@ function checkSwitchState() {
   return mismatch;
 }
 
-function checkFillState() {
-  let fillStop = false;
-  if (TANK.controlTankFill && TANK.level.current >= TANK.pumpThreshold.high) {
-    if (TANK.fillInProgress) {
-      setPumpState(false);
-      setValvesState(false);
-      let levelPcnt = (TANK.level.current - TANK.level.min) / TANK.level.pcnt;
-      let ftime = Math.floor((CFG.uptime_ms - TANK.fill_ms) / 60000);
-      sentNotify(
-        TANK.name +
-          " is full (" +
-          levelPcnt.toFixed(2) +
-          "%), took " +
-          ftime +
-          "min."
-      );
-      TANK.fillInProgress = false;
-      TANK.fill_ms = 0;
-      fillStop = true;
-    }
-  }
-  if (
-    !TANK.shellyRemote[0].fillRequest &&
-    TANK.shellyRemote[0].fillInProgress
-  ) {
+function stopFill() {
+  setPumpState(false);
+  setValvesState(false);
+  let levelPcnt = (TANK.level.current - TANK.level.min) / TANK.level.pcnt;
+  let ftime = Math.floor((CFG.uptime_ms - TANK.fill_ms) / 60000);
+  sentNotify(
+    TANK.name + " is full (" + levelPcnt.toFixed(2) + "%), took " + ftime + "min."
+  );
+  TANK.fillInProgress = false;
+  TANK.fillRequestUser = false;
+  TANK.fill_ms = 0;
+}
+
+function stopFillRemote(id) {
     setPumpState(false);
     setValvesState(false);
     let levelPcnt =
-      (TANK.shellyRemote[0].level.current - TANK.shellyRemote[0].level.min) /
-      TANK.shellyRemote[0].level.pcnt;
+      (TANK.shellyRemote[id].level.current - TANK.shellyRemote[id].level.min) /
+      TANK.shellyRemote[id].level.pcnt;
     let ftime = Math.floor(
-      (CFG.uptime_ms - TANK.shellyRemote[0].fill_ms) / 60000
+      (CFG.uptime_ms - TANK.shellyRemote[id].fill_ms) / 60000
     );
     sentNotify(
-      TANK.shellyRemote[0].name +
-        " is full (" +
-        levelPcnt.toFixed(2) +
-        "%), took " +
-        ftime +
-        "min."
+      TANK.shellyRemote[id].name + " is full (" + levelPcnt.toFixed(2) + "%), took " + ftime + "min."
     );
-    TANK.shellyRemote[0].fillInProgress = false;
-    TANK.shellyRemote[0].fill_ms = 0;
+    TANK.shellyRemote[id].fillInProgress = false;
+    TANK.shellyRemote[id].fillRequestUser = false;
+    TANK.shellyRemote[id].fill_ms = 0;
+}
+
+function checkFillState() {
+  let fillStop = false;
+  if (TANK.controlTankFill &&
+      TANK.level.current >= TANK.pumpThreshold.high &&
+      TANK.fillInProgress) {
+    stopFill();
+    fillStop = true;
+  }
+  if ( !TANK.shellyRemote[0].fillRequest &&
+      TANK.shellyRemote[0].fillInProgress ) {
+    stopFillRemote(0);
     fillStop = true;
   }
   return fillStop;
@@ -268,7 +266,6 @@ function checkFillState() {
 function checkEmptyState() {
   if (TANK.controlTankFill) {
     if (TANK.fillInProgress) {
-      TANK.fillRequestUser = false;
       return true;
     }
     if (TANK.level.current <= TANK.pumpThreshold.low || TANK.fillRequestUser) {
@@ -278,7 +275,6 @@ function checkEmptyState() {
       let levelPcnt = (TANK.level.current - TANK.level.min) / TANK.level.pcnt;
       setPumpState(true);
       TANK.fillInProgress = true;
-      TANK.fillRequestUser = false;
       TANK.fill_ms = CFG.uptime_ms;
       sentNotify(
         "Filling " + TANK.name + " now ... (" + levelPcnt.toFixed(2) + "%)."
@@ -288,7 +284,6 @@ function checkEmptyState() {
   }
   for (let i = 0; i < TANK.shellyRemote.length; i++) {
     if (TANK.shellyRemote[i].fillInProgress) {
-      TANK.shellyRemote[i].fillRequestUser = false;
       return true;
     }
     if (
@@ -301,7 +296,6 @@ function checkEmptyState() {
       setPumpState(true);
       TANK.shellyRemote[i].fillInProgress = true;
       TANK.shellyRemote[i].fill_ms = CFG.uptime_ms;
-      TANK.shellyRemote[i].fillRequestUser = false;
       sentNotify("Filling " + TANK.shellyRemote[i].name + " now.");
       return true;
     }
@@ -530,6 +524,16 @@ function onUserCommand(request, response) {
       code = 200;
     } else if (cmd[1] == 6) {
       TANK.shellyRemote[0].fillRequestUser = true;
+      body = "0";
+      code = 200;
+    }
+  } else if (cmd[0] === "fill_stop") {
+    if (cmd[1] == 5) {
+      stopFill();
+      body = "0";
+      code = 200;
+    } else if (cmd[1] == 6) {
+      stopFillRemote(0);
       body = "0";
       code = 200;
     }
