@@ -21,7 +21,7 @@ let CONFIG = {
   },
 };
 
-// Remote Shelly, controling tank 6000L
+// Remote Shelly, controlling tank 6000L
 let TANK = {
   name: "Tank 6000L",
   controlTankFill: true,
@@ -40,7 +40,7 @@ let TANK = {
     fetchInProgerss: false,
   },
   level: { max: 6.0, min: 2.0, current: 0, pcnt: 0 },
-  pumpThreshold: { low: 4.0, high: 5.0 }, // Water level threshold for stopping and starting the pump
+  pumpThreshold: { low: 3.5, high: 4.3 }, // Water level threshold for stopping and starting the pump
   hydroThreshold: { low: 2.2, high: 2.5 }, // Water level threshold for stopping and strting the hydrophore
   notify: {
     lastSent_ms: 0,
