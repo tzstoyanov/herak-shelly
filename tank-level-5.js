@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Copyright (C) 2024, Tzvetomir Stoyanov <tz.stoyanov@gmail.com>
+// Copyright (C) 2024-2026, Tzvetomir Stoyanov <tz.stoyanov@gmail.com>
 //
 
 let CFG = {
@@ -63,11 +63,11 @@ let TANK = {
     {
       id: 0,
       name: "Tank 6000L",
-      url: "http://192.168.10.227/script/2/fetchData",
-      valvesFillState: true,
+      url: "http://192.168.10.227/script/2/setSwRequest",
+      controlTankFill: true,
+      valvesFillState: true,  // State of the valves to fill this tank
       fillRequest: false,
       fillRequestUser: false,
-      currentLevel: 0.0,
       fillInProgress: false,
       err_count: 0,
       err_ms: 0,
@@ -79,6 +79,8 @@ let TANK = {
         queuePopIdx: 0,
         queue: new Array(CFG.notify.queueCount),
       },
+      level: { max: 6000, min: 10, current: 0, pcnt: 0 },
+      fillThreshold: { low: 3000, high: 5900 }, // Water level threshold
       switches: [
         { id: 0, state: false, control: true, desiredState: false },
         { id: 1, state: false, control: false, desiredState: false },
@@ -196,21 +198,15 @@ function checkSwitchState() {
       mismatch = true;
     }
   }
-  if (
-    TANK.valves.control &&
-    TANK.shellyRemote[TANK.valves.shelly_id].switches[TANK.valves.sw_id]
-      .desiredState !=
+  if ( TANK.valves.control &&
+      TANK.shellyRemote[TANK.valves.shelly_id].switches[TANK.valves.sw_id].desiredState !=
       TANK.shellyRemote[TANK.valves.shelly_id].switches[TANK.valves.sw_id].state
   ) {
     let missLog =
       TANK.valves.name +
       " mismatch: " +
-      TANK.shellyRemote[TANK.valves.shelly_id].switches[TANK.valves.sw_id]
-        .desiredState;
-    setValvesState(
-      TANK.shellyRemote[TANK.valves.shelly_id].switches[TANK.valves.sw_id]
-        .desiredState
-    );
+      TANK.shellyRemote[TANK.valves.shelly_id].switches[TANK.valves.sw_id].desiredState;
+    setValvesState( TANK.shellyRemote[TANK.valves.shelly_id].switches[TANK.valves.sw_id].desiredState );
     console.log(missLog);
     mismatch = true;
   }
@@ -255,7 +251,8 @@ function checkFillState() {
     stopFill();
     fillStop = true;
   }
-  if ( !TANK.shellyRemote[0].fillRequest &&
+  if (TANK.shellyRemote[0].controlTankFill &&
+      TANK.shellyRemote[0].level.current >= TANK.shellyRemote[0].fillThreshold.high &&
       TANK.shellyRemote[0].fillInProgress ) {
     stopFillRemote(0);
     fillStop = true;
@@ -272,6 +269,7 @@ function checkEmptyState() {
       if (!setValvesState(TANK.valvesFillState)) {
         return true;
       }
+      console.log("Tank 5: ", TANK.level.current, " ", TANK.pumpThreshold.low, " ", TANK.fillRequestUser);
       let levelPcnt = (TANK.level.current - TANK.level.min) / TANK.level.pcnt;
       setPumpState(true);
       TANK.fillInProgress = true;
@@ -283,6 +281,8 @@ function checkEmptyState() {
     }
   }
   for (let i = 0; i < TANK.shellyRemote.length; i++) {
+    if (!TANK.shellyRemote[i].controlTankFill)
+        continue;
     if (TANK.shellyRemote[i].fillInProgress) {
       return true;
     }
@@ -421,8 +421,6 @@ function callShellyRemote(id) {
           let val = JSON.parse(result.body);
           TANK.shellyRemote[id].switches[0].state = val.sw0;
           TANK.shellyRemote[id].switches[1].state = val.sw1;
-          TANK.shellyRemote[id].currentLevel = val.level;
-          TANK.shellyRemote[id].fillRequest = val.fillRequest;
           if (TANK.shellyRemote[id].err_count >= CFG.errCountThreshold) {
             let err_s = (CFG.uptime_ms - TANK.shellyRemote[id].err_ms) / 1000;
             sentNotify(
@@ -512,7 +510,30 @@ function tankRun() {
   CFG.runInProgress = false;
 }
 
+function tankRemoteLevelSet(val) {
+  if (val === null || val === undefined || typeof val !== "string") {
+    return;
+  }
+  if (val.trim() === "") {
+    return;
+  }
+  var level = Number(val);
+   if (level < TANK.shellyRemote[0].level.min || level > TANK.shellyRemote[0].level.max) {
+      TANK.shellyRemote[0].fillRequest = false;
+      return;
+  }
+  TANK.shellyRemote[0].level.current = level;
+  if (level <= TANK.shellyRemote[0].fillThreshold.low) {
+    TANK.shellyRemote[0].fillRequest = true;
+  } else if (level >= TANK.shellyRemote[0].fillThreshold.high) {
+    TANK.shellyRemote[0].fillRequest = false;
+  }
+}
+
 // http://<dev ip>/script/1/user_command?fill=<5/6>
+// http://<dev ip>/script/1/user_command?fill_stop=<5/6>
+// http://<dev ip>/script/1/user_command?tank6_level=<int>
+// http://<dev ip>/script/1/user_command?power_save=<on/off>
 function onUserCommand(request, response) {
   code = 400;
   body = "Bad Request";
@@ -537,6 +558,10 @@ function onUserCommand(request, response) {
       body = "0";
       code = 200;
     }
+  } else if (cmd[0] === "tank6_level") {
+      tankRemoteLevelSet(cmd[1])
+      body = "0";
+      code = 200;
   } else if (cmd[0] === "power_save") {
     if (cmd[1] == "on") {
       if (!TANK.powerSaveMode) {
@@ -563,6 +588,7 @@ function onUserCommand(request, response) {
 function init() {
   HTTPServer.registerEndpoint("user_command", onUserCommand);
   TANK.level.pcnt = (TANK.level.max - TANK.level.min) / 100;
+  TANK.shellyRemote[0].level.pcnt = (TANK.shellyRemote[0].level.max - TANK.shellyRemote[0].level.min) / 100;
   //start the timer
   Timer.set(CFG.scanInterval_ms, true, tankRun);
   //Read sensor data at start
